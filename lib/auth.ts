@@ -1,5 +1,12 @@
-import { query } from "./db";
 import { compare, hash } from "bcrypt";
+
+// Update the query import or define a proper type
+import query from "./db";
+
+// Define the expected return type from your database query
+interface QueryResult<T> {
+	rows: T[];
+}
 
 export type User = {
 	id: number;
@@ -16,9 +23,10 @@ export async function createUser(
 	name?: string,
 ): Promise<User> {
 	// Check if user already exists
-	const existingUser = await query("SELECT * FROM users WHERE email = $1", [
-		email,
-	]);
+	const existingUser = (await query<User>(
+		"SELECT * FROM users WHERE email = $1",
+		[email],
+	)) as QueryResult<User>;
 
 	if (existingUser.rows.length > 0) {
 		throw new Error("User already exists");
@@ -28,10 +36,10 @@ export async function createUser(
 	const hashedPassword = await hash(password, 10);
 
 	// Create the user
-	const result = await query(
+	const result = (await query<User>(
 		"INSERT INTO users (email, password, name) VALUES ($1, $2, $3) RETURNING id, email, name, created_at, updated_at, is_verified",
 		[email, hashedPassword, name || null],
-	);
+	)) as QueryResult<User>;
 
 	return result.rows[0];
 }
@@ -41,7 +49,14 @@ export async function verifyCredentials(
 	password: string,
 ): Promise<User | null> {
 	// Find the user
-	const result = await query("SELECT * FROM users WHERE email = $1", [email]);
+	interface UserWithPassword extends User {
+		password: string;
+	}
+
+	const result = (await query<UserWithPassword>(
+		"SELECT * FROM users WHERE email = $1",
+		[email],
+	)) as QueryResult<UserWithPassword>;
 
 	if (result.rows.length === 0) {
 		return null;
@@ -57,15 +72,16 @@ export async function verifyCredentials(
 	}
 
 	// Return user without password
-	const { password: _, ...userWithoutPassword } = user;
+	// Use underscore prefix to indicate intentionally unused variable
+	const { password: _password, ...userWithoutPassword } = user;
 	return userWithoutPassword as User;
 }
 
 export async function getUserById(id: number): Promise<User | null> {
-	const result = await query(
+	const result = (await query<User>(
 		"SELECT id, email, name, created_at, updated_at, is_verified FROM users WHERE id = $1",
 		[id],
-	);
+	)) as QueryResult<User>;
 
 	if (result.rows.length === 0) {
 		return null;
