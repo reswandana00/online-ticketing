@@ -1,14 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, FormEvent } from "react";
 
 export default function Booking() {
 	const router = useRouter();
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState("");
 
-	const handleSubmit = async (e) => {
+	const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		setIsSubmitting(true);
 		setError("");
@@ -16,6 +16,8 @@ export default function Booking() {
 		const formData = new FormData(e.currentTarget);
 
 		try {
+			// Comment out the API call
+			/*
 			const response = await fetch("/api/order/ordered-tickets", {
 				method: "POST",
 				headers: {
@@ -42,12 +44,26 @@ export default function Booking() {
 			}
 
 			console.log("Ticket created successfully:", data);
+			*/
+
+			// Mock successful response
+			console.log("Form submitted with data:", {
+				kotaAsal: formData.get("kotaAsal"),
+				kotaTujuan: formData.get("kotaTujuan"),
+				kendaraan: formData.get("kendaraan"),
+				jumlahOrang: formData.get("jumlahOrang"),
+			});
+
+			// Use a mock ID for redirection
+			const mockTicketId = "mock-ticket-123";
 
 			// Redirect ke halaman pembayaran setelah tiket berhasil dibuat
-			router.push(`/payment?orderedTicketId=${data.id}`);
-		} catch (error) {
-			console.error("Error creating ticket:", error);
-			setError(`Failed to create ticket: ${error.message}`);
+			router.push(`/payment?orderedTicketId=${mockTicketId}`);
+		} catch (err: unknown) {
+			const errorMessage =
+				err instanceof Error ? err.message : "An unknown error occurred";
+			console.error("Error creating ticket:", err);
+			setError(`Failed to create ticket: ${errorMessage}`);
 		} finally {
 			setIsSubmitting(false);
 		}

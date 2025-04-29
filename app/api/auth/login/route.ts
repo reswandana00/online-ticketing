@@ -33,7 +33,8 @@ export async function POST(request: Request) {
 		}
 
 		// Return user data without the password
-		const { password: _, ...userWithoutPassword } = user;
+		// Use destructuring without assignment to exclude password
+		const { ...userWithoutPassword } = user;
 
 		return NextResponse.json(
 			{
@@ -42,7 +43,8 @@ export async function POST(request: Request) {
 			},
 			{ status: 200 },
 		);
-	} catch (error) {
+	} catch (error: unknown) {
+		console.error("Login error:", error);
 		return NextResponse.json(
 			{ message: "Internal server error" },
 			{ status: 500 },
