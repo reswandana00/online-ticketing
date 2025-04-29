@@ -1,0 +1,58 @@
+import { NextResponse } from "next/server";
+import sql from "@/lib/db";
+
+export async function POST(request: Request) {
+	try {
+		const { kotaAsal, kotaTujuan, kendaraan, jumlahOrang } =
+			await request.json();
+
+		if (!kotaAsal || !kotaTujuan || !kendaraan || !jumlahOrang) {
+			return NextResponse.json(
+				{ message: "Missing required fields" },
+				{ status: 400 },
+			);
+		}
+
+		console.log("Attempting to insert ticket with data:", {
+			kotaAsal,
+			kotaTujuan,
+			kendaraan,
+			jumlahOrang,
+		});
+
+		const result = await sql`
+      INSERT INTO ordered_tickets (kota_asal, kota_tujuan, kendaraan, jumlah_orang)
+      VALUES (${kotaAsal}, ${kotaTujuan}, ${kendaraan}, ${jumlahOrang})
+      RETURNING *;
+    `;
+
+		console.log("Database result:", result);
+
+		const ticket = result.rows[0];
+		console.log("Extracted ticket:", ticket);
+
+		// Ensure we're returning a consistent structure with id
+		return NextResponse.json(
+			{
+				id: ticket.id,
+				kotaAsal: ticket.kota_asal,
+				kotaTujuan: ticket.kota_tujuan,
+				kendaraan: ticket.kendaraan,
+				jumlahOrang: ticket.jumlah_orang,
+			},
+			{ status: 201 },
+		);
+	} catch (error) {
+		console.error("Detailed error saving ordered ticket:", error);
+
+		// Return more specific error information
+		return NextResponse.json(
+			{
+				message: "Internal server error",
+				details: error.message,
+				stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+			},
+			{ status: 500 },
+		);
+	}
+}
